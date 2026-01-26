@@ -27,8 +27,9 @@
             background: white;
             border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            padding: 24px;
+            padding: 20px;
             margin-bottom: 16px;
+            overflow: hidden;
         }
 
         .header-icon {
@@ -58,6 +59,7 @@
 
         .form-group {
             margin-bottom: 16px;
+            width: 100%;
         }
 
         label {
@@ -70,11 +72,16 @@
 
         input[type="date"] {
             width: 100%;
+            max-width: 100%;
             padding: 12px 16px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             font-size: 16px;
             transition: all 0.2s;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
 
         input[type="date"]:focus {
@@ -91,13 +98,15 @@
 
         button {
             flex: 1;
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: none;
             border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            box-sizing: border-box;
+            min-width: 0;
         }
 
         .btn-primary {
