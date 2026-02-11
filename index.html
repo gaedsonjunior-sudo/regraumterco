@@ -1,667 +1,1154 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Validade no Recebimento</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Validade</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --ink: #0f0f0f;
+      --paper: #f5f2eb;
+      --card: #fffef9;
+      --accent: #d64f1e;
+      --accent2: #2563c4;
+      --green: #1a7a4a;
+      --red: #c0210f;
+      --border: rgba(15,15,15,0.12);
+      --shadow: 0 2px 0 var(--border), 0 8px 32px rgba(15,15,15,0.08);
+      --shadow-deep: 0 2px 0 var(--border), 0 16px 48px rgba(15,15,15,0.14);
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #e0f2fe 0%, #ddd6fe 100%);
-            min-height: 100vh;
-            padding: 16px;
-        }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-        }
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--paper);
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(214,79,30,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(37,99,196,0.06) 0%, transparent 50%);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+      color: var(--ink);
+    }
 
-        .card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-bottom: 16px;
-            overflow: hidden;
-        }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
 
-        .header-icon {
-            background: #e0e7ff;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+      padding-top: 8px;
+    }
 
-        h1 {
-            color: #1f2937;
-            font-size: 24px;
-            text-align: center;
-            margin-bottom: 8px;
-        }
+    .header-badge {
+      display: inline-block;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 2px;
+      margin-bottom: 14px;
+    }
 
-        h2 {
-            color: #1f2937;
-            font-size: 20px;
-            margin-bottom: 16px;
-        }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
 
-        .subtitle {
-            color: #6b7280;
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 24px;
-        }
+    .header h1 span { color: var(--accent); }
 
-        .form-group {
-            margin-bottom: 16px;
-            width: 100%;
-        }
+    .header p {
+      margin-top: 8px;
+      font-size: 13px;
+      color: rgba(15,15,15,0.5);
+      font-weight: 400;
+    }
 
-        label {
-            display: block;
-            color: #374151;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
 
-        input[type="date"],
-        input[type="text"] {
-            width: 100%;
-            max-width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.2s;
-            box-sizing: border-box;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
+    /* ── FORM ── */
+    .form-group { margin-bottom: 18px; }
 
-        input[type="date"]:focus,
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(15,15,15,0.5);
+      margin-bottom: 7px;
+    }
 
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 24px;
-        }
+    input[type="date"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: 'Sora', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      transition: border-color 0.18s, box-shadow 0.18s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
 
-        button {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-sizing: border-box;
-            min-width: 0;
-        }
+    input:focus {
+      outline: none;
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px rgba(37,99,196,0.12);
+    }
 
-        .btn-primary {
-            background: #4f46e5;
-            color: white;
-        }
+    .dates-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
 
-        .btn-primary:hover {
-            background: #4338ca;
-        }
+    .dates-row .form-group { margin-bottom: 0; }
 
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
+    /* ── BARCODE LOOKUP ── */
+    .barcode-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
 
-        .btn-secondary {
-            background: white;
-            color: #374151;
-            border: 2px solid #d1d5db;
-        }
+    .barcode-row .form-group { flex: 1; margin-bottom: 0; }
 
-        .btn-secondary:hover {
-            background: #f9fafb;
-        }
+    .btn-lookup {
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
 
-        .btn-scanner {
-            background: #10b981;
-            color: white;
-            width: 100%;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+    .btn-lookup:hover { opacity: 0.8; }
+    .btn-lookup:active { transform: scale(0.97); }
+    .btn-lookup:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        .btn-scanner:hover {
-            background: #059669;
-        }
+    /* ── PRODUCT INFO ── */
+    .product-info {
+      display: none;
+      background: var(--paper);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-top: 14px;
+      align-items: center;
+      gap: 12px;
+      animation: fadeUp 0.25s ease-out;
+    }
 
-        .result-card {
-            display: none;
-        }
+    .product-info.show { display: flex; }
 
-        .result-card.show {
-            display: block;
-            animation: slideIn 0.3s ease-out;
-        }
+    .product-thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 6px;
+      object-fit: contain;
+      background: white;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    .product-thumb-placeholder {
+      width: 52px;
+      height: 52px;
+      border-radius: 6px;
+      background: rgba(15,15,15,0.06);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
 
-        .alert {
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
+    .product-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.3;
+    }
 
-        .alert-error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
-        }
+    .product-brand {
+      font-size: 12px;
+      color: rgba(15,15,15,0.45);
+      margin-top: 2px;
+      font-family: 'DM Mono', monospace;
+    }
 
-        .alert-success {
-            background: #f0fdf4;
-            border: 2px solid #86efac;
-            color: #166534;
-        }
+    .lookup-error {
+      font-size: 12px;
+      color: rgba(15,15,15,0.4);
+      margin-top: 6px;
+      font-style: italic;
+      display: none;
+    }
 
-        .alert-danger {
-            background: #fef2f2;
-            border: 2px solid #fca5a5;
-            color: #991b1b;
-        }
+    .lookup-error.show { display: block; }
 
-        .max-date-box {
-            background: #eef2ff;
-            border: 1px solid #c7d2fe;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
+    /* ── BUTTONS ── */
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 22px;
+    }
 
-        .max-date-label {
-            color: #4338ca;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
+    .btn-primary {
+      flex: 1;
+      padding: 14px 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.12s;
+      letter-spacing: -0.01em;
+    }
 
-        .max-date-value {
-            color: #312e81;
-            font-size: 28px;
-            font-weight: 700;
-        }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:active { transform: scale(0.98); }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
+    .btn-secondary {
+      padding: 14px 18px;
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
 
-        .info-box {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 16px;
-        }
+    .btn-secondary:hover { background: rgba(15,15,15,0.04); }
 
-        .info-label {
-            color: #6b7280;
-            font-size: 12px;
-            margin-bottom: 4px;
-        }
+    /* ── DIVIDER ── */
+    .form-divider {
+      border: none;
+      border-top: 1px dashed var(--border);
+      margin: 20px 0;
+    }
 
-        .info-value {
-            color: #1f2937;
-            font-size: 20px;
-            font-weight: 700;
-        }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(15,15,15,0.35);
+      margin-bottom: 12px;
+    }
 
-        .days-remaining {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 8px;
-            padding: 16px;
-            color: #1e40af;
-            font-size: 14px;
-        }
+    /* ── RESULT CARD ── */
+    .result-card {
+      display: none;
+      animation: fadeUp 0.3s ease-out;
+    }
 
-        .icon {
-            width: 24px;
-            height: 24px;
-            flex-shrink: 0;
-        }
+    .result-card.show { display: block; }
 
-        .hidden {
-            display: none;
-        }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        #scanner-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+    .result-inner {
+      position: relative;
+    }
 
-        #scanner-container.active {
-            display: flex;
-        }
+    /* Status banner */
+    .status-banner {
+      border-radius: 10px 10px 0 0;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-        #interactive {
-            width: 100%;
-            max-width: 640px;
-            height: 480px;
-            border-radius: 12px;
-            overflow: hidden;
-        }
+    .status-banner.approved {
+      background: var(--green);
+      color: white;
+    }
 
-        #interactive video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+    .status-banner.rejected {
+      background: var(--red);
+      color: white;
+    }
 
-        .scanner-controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 12px;
-        }
+    .status-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
 
-        .history-item {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-        }
+    .status-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
 
-        .history-item.approved {
-            border-left: 4px solid #10b981;
-        }
+    .status-sub {
+      font-size: 13px;
+      opacity: 0.82;
+      margin-top: 2px;
+    }
 
-        .history-item.rejected {
-            border-left: 4px solid #ef4444;
-        }
+    /* Result body */
+    .result-body {
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      background: var(--card);
+      padding: 18px 20px;
+    }
 
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
+    .result-product-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed var(--border);
+      margin-bottom: 14px;
+    }
 
-        .history-barcode {
-            font-weight: 600;
-            color: #1f2937;
-            font-size: 14px;
-        }
+    .result-product-img {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      object-fit: contain;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
 
-        .history-status {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
+    .result-product-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
 
-        .history-status.approved {
-            background: #d1fae5;
-            color: #065f46;
-        }
+    .result-product-name {
+      font-size: 14px;
+      font-weight: 700;
+    }
 
-        .history-status.rejected {
-            background: #fee2e2;
-            color: #991b1b;
-        }
+    .result-product-barcode {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: rgba(15,15,15,0.4);
+      margin-top: 2px;
+    }
 
-        .history-details {
-            font-size: 12px;
-            color: #6b7280;
-            line-height: 1.5;
-        }
+    .max-date-highlight {
+      background: var(--paper);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
 
-        .clear-history {
-            width: 100%;
-            background: #ef4444;
-            color: white;
-            margin-top: 12px;
-        }
+    .max-date-highlight .label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(15,15,15,0.4);
+      margin-bottom: 4px;
+    }
 
-        .clear-history:hover {
-            background: #dc2626;
-        }
+    .max-date-highlight .value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      font-family: 'DM Mono', monospace;
+    }
 
-        .no-history {
-            text-align: center;
-            color: #9ca3af;
-            padding: 40px 20px;
-            font-size: 14px;
-        }
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
 
-        .barcode-input-group {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-        }
+    .stat-box {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
 
-        .barcode-input-group input {
-            flex: 1;
-        }
+    .stat-box .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(15,15,15,0.38);
+      margin-bottom: 4px;
+    }
 
-        .barcode-input-group button {
-            flex: 0 0 auto;
-            padding: 12px 16px;
-        }
-    </style>
+    .stat-box .stat-value {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'DM Mono', monospace;
+      color: var(--ink);
+    }
+
+    .days-pill {
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .days-pill.ok {
+      background: rgba(26,122,74,0.1);
+      color: var(--green);
+      border: 1px solid rgba(26,122,74,0.2);
+    }
+
+    .days-pill.late {
+      background: rgba(192,33,15,0.08);
+      color: var(--red);
+      border: 1px solid rgba(192,33,15,0.18);
+    }
+
+    .result-footer {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-share {
+      flex: 1;
+      padding: 12px 16px;
+      background: #25D366;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .btn-share:hover { opacity: 0.88; }
+    .btn-share:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-download {
+      padding: 12px 14px;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-download:hover { opacity: 0.8; }
+
+    /* ── SHARE CARD (rendered offscreen for html2canvas) ── */
+    #share-canvas-source {
+      position: fixed;
+      left: -9999px;
+      top: -9999px;
+      width: 480px;
+    }
+
+    .share-card {
+      background: var(--card);
+      font-family: 'Sora', sans-serif;
+      padding: 0;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .share-header {
+      padding: 20px 22px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .share-company {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(15,15,15,0.4);
+    }
+
+    .share-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-top: 2px;
+    }
+
+    .share-status-pill {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 100px;
+      letter-spacing: 0.02em;
+    }
+
+    .share-status-pill.approved { background: var(--green); color: white; }
+    .share-status-pill.rejected { background: var(--red); color: white; }
+
+    .share-body { padding: 18px 22px; }
+
+    .share-product-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .share-product-img {
+      width: 52px;
+      height: 52px;
+      border-radius: 8px;
+      object-fit: contain;
+      background: var(--paper);
+      border: 1px solid var(--border);
+    }
+
+    .share-product-name { font-size: 16px; font-weight: 700; }
+    .share-product-bc { font-size: 12px; font-family: 'DM Mono', monospace; color: rgba(15,15,15,0.4); margin-top: 2px; }
+
+    .share-max-date {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .share-max-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(15,15,15,0.4); margin-bottom: 4px; }
+    .share-max-value { font-size: 28px; font-weight: 800; font-family: 'DM Mono', monospace; letter-spacing: -0.02em; }
+
+    .share-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .share-stat {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .share-stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(15,15,15,0.38); margin-bottom: 3px; }
+    .share-stat-value { font-size: 13px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+    .share-verdict {
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .share-verdict.ok { background: rgba(26,122,74,0.1); color: var(--green); border: 1px solid rgba(26,122,74,0.2); }
+    .share-verdict.late { background: rgba(192,33,15,0.08); color: var(--red); border: 1px solid rgba(192,33,15,0.18); }
+
+    .share-footer {
+      padding: 12px 22px;
+      background: var(--ink);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .share-footer-label { font-size: 11px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.4); }
+    .share-footer-ts { font-size: 11px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.6); }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner.dark {
+      border: 2px solid rgba(15,15,15,0.15);
+      border-top-color: var(--ink);
+    }
+
+    /* ── ERROR MSG ── */
+    .form-error {
+      background: #fff0ed;
+      border: 1.5px solid rgba(214,79,30,0.3);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .form-error.show { display: block; animation: fadeUp 0.2s; }
+
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="header-icon">
-                <svg class="icon" fill="none" stroke="#4f46e5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-            </div>
-            
-            <h1>Controle de Validade no Recebimento</h1>
-            <p class="subtitle">Valida produtos com 2/3 do prazo de validade</p>
+  <div class="container">
 
-            <button class="btn-scanner" onclick="startScanner()">
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-                </svg>
-                Escanear Código de Barras
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-badge">Controle de Recebimento</div>
+      <h1>Validação de<br><span>Prazo</span> de Produto</h1>
+      <p>Regra: produto deve ter ≥ 2/3 da vida útil restante no recebimento</p>
+    </div>
+
+    <!-- MAIN FORM CARD -->
+    <div class="card">
+
+      <!-- Barcode -->
+      <div class="section-label">Identificação do Produto</div>
+      <div class="barcode-row">
+        <div class="form-group">
+          <label for="barcode">Código de Barras</label>
+          <input type="text" id="barcode" placeholder="Ex: 7891000100103" inputmode="numeric">
+        </div>
+        <button class="btn-lookup" id="lookupBtn" onclick="lookupProduct()" title="Buscar produto">
+          <span id="lookupBtnContent">🔍 Buscar</span>
+        </button>
+      </div>
+      <div class="product-info" id="productInfo">
+        <div class="product-thumb-placeholder" id="productThumbPlaceholder">📦</div>
+        <img id="productThumb" class="product-thumb" style="display:none" alt="Produto">
+        <div>
+          <div class="product-name" id="productName">—</div>
+          <div class="product-brand" id="productBrand">—</div>
+        </div>
+      </div>
+      <div class="lookup-error" id="lookupError">Produto não encontrado na base pública. Prossiga preenchendo as datas.</div>
+
+      <hr class="form-divider">
+
+      <!-- Dates -->
+      <div class="section-label">Datas</div>
+      <div class="dates-row">
+        <div class="form-group">
+          <label for="mfgDate">Fabricação</label>
+          <input type="date" id="mfgDate" required>
+        </div>
+        <div class="form-group">
+          <label for="expDate">Validade</label>
+          <input type="date" id="expDate" required>
+        </div>
+        <div class="form-group">
+          <label for="rcptDate">Recebimento</label>
+          <input type="date" id="rcptDate" required>
+        </div>
+      </div>
+
+      <div class="form-error" id="formError"></div>
+
+      <div class="button-group">
+        <button class="btn-primary" onclick="calculate()">Calcular →</button>
+        <button class="btn-secondary" onclick="resetAll()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- RESULT CARD -->
+    <div class="result-card" id="resultCard">
+      <div class="result-inner">
+
+        <!-- Status banner -->
+        <div class="status-banner" id="statusBanner">
+          <div class="status-icon" id="statusIcon"></div>
+          <div>
+            <div class="status-title" id="statusTitle"></div>
+            <div class="status-sub" id="statusSub"></div>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="result-body">
+          <!-- Product row -->
+          <div class="result-product-row">
+            <div class="result-product-placeholder" id="resultThumbPlaceholder">📦</div>
+            <img id="resultThumb" class="result-product-img" style="display:none" alt="">
+            <div>
+              <div class="result-product-name" id="resultName">—</div>
+              <div class="result-product-barcode" id="resultBarcode">—</div>
+            </div>
+          </div>
+
+          <!-- Max date -->
+          <div class="max-date-highlight">
+            <div class="label">Data Máxima de Recebimento</div>
+            <div class="value" id="resultMaxDate">—</div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-label">Fabricação</div>
+              <div class="stat-value" id="rMfg">—</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Validade</div>
+              <div class="stat-value" id="rExp">—</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Recebimento</div>
+              <div class="stat-value" id="rRcpt">—</div>
+            </div>
+          </div>
+
+          <!-- Days pill -->
+          <div class="days-pill" id="daysPill"></div>
+
+          <!-- Action buttons -->
+          <div class="result-footer">
+            <button class="btn-share" id="shareBtn" onclick="shareOnWhatsApp()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Enviar pelo WhatsApp
             </button>
-
-            <form id="productForm">
-                <div class="form-group">
-                    <label for="barcode">Código de Barras</label>
-                    <div class="barcode-input-group">
-                        <input type="text" id="barcode" placeholder="Digite ou escaneie o código">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="manufactureDate">📅 Data de Fabricação</label>
-                    <input type="date" id="manufactureDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="expiryDate">📅 Data de Validade</label>
-                    <input type="date" id="expiryDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="receiptDate">📅 Data de Recebimento</label>
-                    <input type="date" id="receiptDate" required>
-                </div>
-
-                <div class="button-group">
-                    <button type="submit" class="btn-primary">Calcular</button>
-                    <button type="button" class="btn-secondary" onclick="resetForm()">Limpar</button>
-                </div>
-            </form>
+            <button class="btn-download" onclick="downloadImage()" title="Baixar imagem">
+              ↓ Imagem
+            </button>
+          </div>
         </div>
-
-        <div class="card result-card" id="resultCard"></div>
-
-        <div class="card" id="historyCard">
-            <h2>📋 Histórico</h2>
-            <div id="historyList">
-                <div class="no-history">Nenhum produto verificado ainda</div>
-            </div>
-            <button class="clear-history hidden" id="clearHistoryBtn" onclick="clearHistory()">Limpar Histórico</button>
-        </div>
+      </div>
     </div>
 
-    <div id="scanner-container">
-        <div id="interactive" class="viewport"></div>
-        <div class="scanner-controls">
-            <button class="btn-secondary" onclick="stopScanner()">Cancelar</button>
+  </div>
+
+  <!-- OFFSCREEN SHARE CARD (used by html2canvas) -->
+  <div id="share-canvas-source">
+    <div class="share-card" id="shareCard">
+      <div class="share-header">
+        <div>
+          <div class="share-company">Controle de Recebimento</div>
+          <div class="share-title">Validação de Produto</div>
         </div>
+        <div class="share-status-pill" id="sc-pill">—</div>
+      </div>
+      <div class="share-body">
+        <div class="share-product-row">
+          <img id="sc-img" class="share-product-img" src="" alt="" style="display:none">
+          <div id="sc-imgph" style="width:52px;height:52px;border-radius:8px;background:#f0ede4;border:1px solid rgba(15,15,15,0.12);display:flex;align-items:center;justify-content:center;font-size:26px;">📦</div>
+          <div>
+            <div class="share-product-name" id="sc-name">—</div>
+            <div class="share-product-bc" id="sc-bc">—</div>
+          </div>
+        </div>
+        <div class="share-max-date">
+          <div class="share-max-label">Data Máxima de Recebimento</div>
+          <div class="share-max-value" id="sc-maxdate">—</div>
+        </div>
+        <div class="share-stats">
+          <div class="share-stat">
+            <div class="share-stat-label">Fabricação</div>
+            <div class="share-stat-value" id="sc-mfg">—</div>
+          </div>
+          <div class="share-stat">
+            <div class="share-stat-label">Validade</div>
+            <div class="share-stat-value" id="sc-exp">—</div>
+          </div>
+          <div class="share-stat">
+            <div class="share-stat-label">Recebimento</div>
+            <div class="share-stat-value" id="sc-rcpt">—</div>
+          </div>
+        </div>
+        <div class="share-verdict" id="sc-verdict">—</div>
+      </div>
+      <div class="share-footer">
+        <span class="share-footer-label">Controle de Validade</span>
+        <span class="share-footer-ts" id="sc-ts">—</span>
+      </div>
     </div>
+  </div>
 
-    <script>
-        let history = JSON.parse(localStorage.getItem('productHistory') || '[]');
-        displayHistory();
+  <script>
+    // ── STATE ──
+    let productData = { name: null, brand: null, imgUrl: null };
 
-        document.getElementById('productForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            calculateMaxReceiptDate();
-        });
+    // ── SET TODAY AS DEFAULT RECEIPT DATE ──
+    (function () {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('rcptDate').value = today;
+    })();
 
-        function startScanner() {
-            const scannerContainer = document.getElementById('scanner-container');
-            scannerContainer.classList.add('active');
+    // ── LOOKUP ──
+    async function lookupProduct() {
+      const barcode = document.getElementById('barcode').value.trim();
+      if (!barcode) return;
 
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#interactive'),
-                    constraints: {
-                        width: 640,
-                        height: 480,
-                        facingMode: "environment"
-                    },
-                },
-                decoder: {
-                    readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader", "upc_reader", "upc_e_reader"]
-                }
-            }, function(err) {
-                if (err) {
-                    console.error(err);
-                    alert('Erro ao acessar a câmera. Verifique as permissões.');
-                    stopScanner();
-                    return;
-                }
-                Quagga.start();
-            });
+      const btn = document.getElementById('lookupBtn');
+      const content = document.getElementById('lookupBtnContent');
+      const infoBox = document.getElementById('productInfo');
+      const errBox = document.getElementById('lookupError');
 
-            Quagga.onDetected(function(result) {
-                const code = result.codeResult.code;
-                document.getElementById('barcode').value = code;
-                stopScanner();
-            });
+      btn.disabled = true;
+      content.innerHTML = '<span class="spinner"></span>';
+      infoBox.classList.remove('show');
+      errBox.classList.remove('show');
+      productData = { name: null, brand: null, imgUrl: null };
+
+      try {
+        const res = await fetch(
+          `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        const data = await res.json();
+
+        if (data.status === 1 && data.product) {
+          const p = data.product;
+          productData.name = p.product_name || p.product_name_pt || p.abbreviated_product_name || 'Nome não disponível';
+          productData.brand = p.brands || '';
+          productData.imgUrl = p.image_small_url || p.image_url || null;
+
+          document.getElementById('productName').textContent = productData.name;
+          document.getElementById('productBrand').textContent = productData.brand || 'Marca não informada';
+
+          const thumb = document.getElementById('productThumb');
+          const ph = document.getElementById('productThumbPlaceholder');
+          if (productData.imgUrl) {
+            thumb.src = productData.imgUrl;
+            thumb.onload = () => { thumb.style.display = 'block'; ph.style.display = 'none'; };
+            thumb.onerror = () => { thumb.style.display = 'none'; ph.style.display = 'flex'; };
+          } else {
+            thumb.style.display = 'none';
+            ph.style.display = 'flex';
+          }
+
+          infoBox.classList.add('show');
+        } else {
+          errBox.classList.add('show');
         }
+      } catch (e) {
+        errBox.classList.add('show');
+      }
 
-        function stopScanner() {
-            Quagga.stop();
-            document.getElementById('scanner-container').classList.remove('active');
-        }
+      btn.disabled = false;
+      content.innerHTML = '🔍 Buscar';
+    }
 
-        function calculateMaxReceiptDate() {
-            const barcode = document.getElementById('barcode').value;
-            const mfgDate = new Date(document.getElementById('manufactureDate').value);
-            const expDate = new Date(document.getElementById('expiryDate').value);
-            const rcptDate = new Date(document.getElementById('receiptDate').value);
+    // Allow Enter key on barcode field
+    document.getElementById('barcode').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); lookupProduct(); }
+    });
 
-            const resultCard = document.getElementById('resultCard');
+    // ── CALCULATE ──
+    function calculate() {
+      const mfgVal = document.getElementById('mfgDate').value;
+      const expVal = document.getElementById('expDate').value;
+      const rcptVal = document.getElementById('rcptDate').value;
 
-            if (expDate <= mfgDate) {
-                showError('A data de validade deve ser posterior à data de fabricação');
-                return;
+      const errEl = document.getElementById('formError');
+
+      if (!mfgVal || !expVal || !rcptVal) {
+        showFormError('Preencha todas as três datas antes de calcular.');
+        return;
+      }
+
+      const mfg = parseLocalDate(mfgVal);
+      const exp = parseLocalDate(expVal);
+      const rcpt = parseLocalDate(rcptVal);
+
+      if (exp <= mfg) {
+        showFormError('A data de validade deve ser posterior à data de fabricação.');
+        return;
+      }
+
+      errEl.classList.remove('show');
+
+      const shelfDays = daysBetween(mfg, exp);
+      const oneThird = Math.floor(shelfDays / 3);
+      const maxDate = addDays(mfg, oneThird);
+      const isValid = rcpt <= maxDate;
+      const diff = daysBetween(rcpt, maxDate); // positive = still time; negative = overdue
+
+      renderResult({ isValid, maxDate, shelfDays, oneThird, diff, mfg, exp, rcpt });
+    }
+
+    function parseLocalDate(str) {
+      const [y, m, d] = str.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function daysBetween(a, b) {
+      return Math.round((b - a) / 86400000);
+    }
+
+    function addDays(date, n) {
+      const d = new Date(date);
+      d.setDate(d.getDate() + n);
+      return d;
+    }
+
+    function fmt(date) {
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function fmtShort(date) {
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+
+    // ── RENDER RESULT ──
+    function renderResult({ isValid, maxDate, shelfDays, oneThird, diff, mfg, exp, rcpt }) {
+      const barcode = document.getElementById('barcode').value.trim() || 'Sem código';
+
+      // Status banner
+      const banner = document.getElementById('statusBanner');
+      banner.className = 'status-banner ' + (isValid ? 'approved' : 'rejected');
+      document.getElementById('statusIcon').textContent = isValid ? '✅' : '❌';
+      document.getElementById('statusTitle').textContent = isValid ? 'PRODUTO APROVADO' : 'PRODUTO REPROVADO';
+      document.getElementById('statusSub').textContent = isValid
+        ? 'Pode ser recebido na loja'
+        : 'Não atende ao critério de 2/3 de prazo restante';
+
+      // Product row
+      const rThumb = document.getElementById('resultThumb');
+      const rPh = document.getElementById('resultThumbPlaceholder');
+      if (productData.imgUrl) {
+        rThumb.src = productData.imgUrl;
+        rThumb.style.display = 'block';
+        rPh.style.display = 'none';
+      } else {
+        rThumb.style.display = 'none';
+        rPh.style.display = 'flex';
+      }
+      document.getElementById('resultName').textContent = productData.name || barcode;
+      document.getElementById('resultBarcode').textContent = barcode;
+
+      // Max date
+      document.getElementById('resultMaxDate').textContent = fmt(maxDate);
+
+      // Stats
+      document.getElementById('rMfg').textContent = fmtShort(mfg);
+      document.getElementById('rExp').textContent = fmtShort(exp);
+      document.getElementById('rRcpt').textContent = fmtShort(rcpt);
+
+      // Days pill
+      const pill = document.getElementById('daysPill');
+      if (isValid) {
+        pill.className = 'days-pill ok';
+        pill.textContent = `✓ ${diff} dias restantes para a data máxima`;
+      } else {
+        pill.className = 'days-pill late';
+        pill.textContent = `✗ ${Math.abs(diff)} dias além do prazo máximo`;
+      }
+
+      // Populate share card
+      populateShareCard({ isValid, maxDate, shelfDays, oneThird, diff, mfg, exp, rcpt, barcode });
+
+      // Show
+      const rc = document.getElementById('resultCard');
+      rc.classList.add('show');
+      rc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // ── POPULATE SHARE CARD ──
+    function populateShareCard({ isValid, maxDate, diff, mfg, exp, rcpt, barcode }) {
+      document.getElementById('sc-pill').textContent = isValid ? 'APROVADO' : 'REPROVADO';
+      document.getElementById('sc-pill').className = 'share-status-pill ' + (isValid ? 'approved' : 'rejected');
+
+      const scImg = document.getElementById('sc-img');
+      const scPh = document.getElementById('sc-imgph');
+      if (productData.imgUrl) {
+        scImg.src = productData.imgUrl;
+        scImg.style.display = 'block';
+        scPh.style.display = 'none';
+      } else {
+        scImg.style.display = 'none';
+        scPh.style.display = 'flex';
+      }
+
+      document.getElementById('sc-name').textContent = productData.name || 'Produto ' + barcode;
+      document.getElementById('sc-bc').textContent = 'Cód: ' + barcode;
+      document.getElementById('sc-maxdate').textContent = fmt(maxDate);
+      document.getElementById('sc-mfg').textContent = fmtShort(mfg);
+      document.getElementById('sc-exp').textContent = fmtShort(exp);
+      document.getElementById('sc-rcpt').textContent = fmtShort(rcpt);
+
+      const verdict = document.getElementById('sc-verdict');
+      if (isValid) {
+        verdict.className = 'share-verdict ok';
+        verdict.textContent = `✓ ${diff} dias restantes — produto dentro do prazo`;
+      } else {
+        verdict.className = 'share-verdict late';
+        verdict.textContent = `✗ ${Math.abs(diff)} dias além do prazo máximo — REPROVADO`;
+      }
+
+      document.getElementById('sc-ts').textContent = new Date().toLocaleString('pt-BR');
+    }
+
+    // ── GENERATE IMAGE ──
+    async function generateImage() {
+      const el = document.getElementById('shareCard');
+      return await html2canvas(el, {
+        scale: 2.5,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#fffef9',
+        logging: false
+      });
+    }
+
+    // ── SHARE ON WHATSAPP ──
+    async function shareOnWhatsApp() {
+      const btn = document.getElementById('shareBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Gerando...';
+
+      try {
+        const canvas = await generateImage();
+        canvas.toBlob(async (blob) => {
+          // Try native Web Share API first (mobile)
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'validade.png', { type: 'image/png' })] })) {
+            const file = new File([blob], 'validade.png', { type: 'image/png' });
+            try {
+              await navigator.share({ files: [file], title: 'Validação de Produto' });
+            } catch (e) {
+              // User cancelled or error — fallback
+              openWhatsAppFallback();
             }
+          } else {
+            // Desktop: download + open WhatsApp
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'validacao-produto.png';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            openWhatsAppFallback();
+          }
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar pelo WhatsApp';
+        }, 'image/png');
+      } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.innerHTML = 'Enviar pelo WhatsApp';
+      }
+    }
 
-            const shelfLifeDays = Math.floor((expDate - mfgDate) / (1000 * 60 * 60 * 24));
-            const oneThirdDays = Math.floor(shelfLifeDays / 3);
-            const maxDate = new Date(mfgDate);
-            maxDate.setDate(maxDate.getDate() + oneThirdDays);
+    function openWhatsAppFallback() {
+      const barcode = document.getElementById('barcode').value.trim() || 'sem código';
+      const isValid = document.getElementById('statusTitle').textContent.includes('APROVADO');
+      const maxDate = document.getElementById('resultMaxDate').textContent;
+      const name = productData.name || barcode;
+      const msg = encodeURIComponent(
+        `*Controle de Validade*\n` +
+        `Produto: ${name}\n` +
+        `Código: ${barcode}\n` +
+        `Status: ${isValid ? '✅ APROVADO' : '❌ REPROVADO'}\n` +
+        `Data máx. de recebimento: ${maxDate}`
+      );
+      window.open(`https://wa.me/?text=${msg}`, '_blank');
+    }
 
-            const isValid = rcptDate <= maxDate;
-            const daysRemaining = Math.floor((maxDate - rcptDate) / (1000 * 60 * 60 * 24));
+    // ── DOWNLOAD IMAGE ──
+    async function downloadImage() {
+      const btn = document.querySelector('.btn-download');
+      btn.textContent = '⏳';
+      try {
+        const canvas = await generateImage();
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = 'validacao-produto.png';
+        a.click();
+      } catch (e) {}
+      btn.textContent = '↓ Imagem';
+    }
 
-            showResult(isValid, maxDate, shelfLifeDays, oneThirdDays, daysRemaining);
+    // ── HELPERS ──
+    function showFormError(msg) {
+      const el = document.getElementById('formError');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
 
-            // Adiciona ao histórico
-            addToHistory({
-                barcode: barcode || 'Sem código',
-                manufactureDate: mfgDate.toLocaleDateString('pt-BR'),
-                expiryDate: expDate.toLocaleDateString('pt-BR'),
-                receiptDate: rcptDate.toLocaleDateString('pt-BR'),
-                maxDate: maxDate.toLocaleDateString('pt-BR'),
-                isValid: isValid,
-                timestamp: new Date().toLocaleString('pt-BR')
-            });
-        }
-
-        function showError(message) {
-            const resultCard = document.getElementById('resultCard');
-            resultCard.innerHTML = `
-                <div class="alert alert-error">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span>${message}</span>
-                </div>
-            `;
-            resultCard.classList.add('show');
-        }
-
-        function showResult(isValid, maxDate, shelfLifeDays, oneThirdDays, daysRemaining) {
-            const resultCard = document.getElementById('resultCard');
-            const alertClass = isValid ? 'alert-success' : 'alert-danger';
-            const statusText = isValid ? 'PRODUTO APROVADO' : 'PRODUTO REPROVADO';
-            const statusSubtext = isValid ? 'Pode ser recebido na loja' : 'Não pode ser recebido';
-            const iconPath = isValid 
-                ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-                : 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-
-            const formattedMaxDate = maxDate.toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-
-            const daysRemainingText = daysRemaining >= 0 
-                ? `${daysRemaining} dias restantes`
-                : `${Math.abs(daysRemaining)} dias de atraso`;
-
-            resultCard.innerHTML = `
-                <div class="alert ${alertClass}">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"/>
-                    </svg>
-                    <div>
-                        <div style="font-weight: 700; margin-bottom: 4px;">${statusText}</div>
-                        <div style="font-size: 14px;">${statusSubtext}</div>
-                    </div>
-                </div>
-
-                <div class="max-date-box">
-                    <div class="max-date-label">Data Máxima de Recebimento</div>
-                    <div class="max-date-value">${formattedMaxDate}</div>
-                </div>
-
-                <div class="info-grid">
-                    <div class="info-box">
-                        <div class="info-label">Shelf Life</div>
-                        <div class="info-value">${shelfLifeDays} dias</div>
-                    </div>
-                    <div class="info-box">
-                        <div class="info-label">1/3 do prazo</div>
-                        <div class="info-value">${oneThirdDays} dias</div>
-                    </div>
-                </div>
-
-                ${isValid ? `
-                    <div class="days-remaining">
-                        <strong>${daysRemainingText}</strong> para atingir a data máxima de recebimento
-                    </div>
-                ` : ''}
-            `;
-            resultCard.classList.add('show');
-        }
-
-        function addToHistory(item) {
-            history.unshift(item);
-            if (history.length > 20) history = history.slice(0, 20);
-            localStorage.setItem('productHistory', JSON.stringify(history));
-            displayHistory();
-        }
-
-        function displayHistory() {
-            const historyList = document.getElementById('historyList');
-            const clearBtn = document.getElementById('clearHistoryBtn');
-
-            if (history.length === 0) {
-                historyList.innerHTML = '<div class="no-history">Nenhum produto verificado ainda</div>';
-                clearBtn.classList.add('hidden');
-                return;
-            }
-
-            clearBtn.classList.remove('hidden');
-            historyList.innerHTML = history.map(item => `
-                <div class="history-item ${item.isValid ? 'approved' : 'rejected'}">
-                    <div class="history-header">
-                        <span class="history-barcode">📦 ${item.barcode}</span>
-                        <span class="history-status ${item.isValid ? 'approved' : 'rejected'}">
-                            ${item.isValid ? '✓ Aprovado' : '✗ Reprovado'}
-                        </span>
-                    </div>
-                    <div class="history-details">
-                        Fabricação: ${item.manufactureDate} | Validade: ${item.expiryDate}<br>
-                        Recebimento: ${item.receiptDate} | Máx: ${item.maxDate}<br>
-                        <small>Verificado em: ${item.timestamp}</small>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function clearHistory() {
-            if (confirm('Tem certeza que deseja limpar todo o histórico?')) {
-                history = [];
-                localStorage.removeItem('productHistory');
-                displayHistory();
-            }
-        }
-
-        function resetForm() {
-            document.getElementById('productForm').reset();
-            const resultCard = document.getElementById('resultCard');
-            resultCard.classList.remove('show');
-            resultCard.innerHTML = '';
-        }
-    </script>
+    function resetAll() {
+      document.getElementById('barcode').value = '';
+      document.getElementById('mfgDate').value = '';
+      document.getElementById('expDate').value = '';
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('rcptDate').value = today;
+      document.getElementById('productInfo').classList.remove('show');
+      document.getElementById('lookupError').classList.remove('show');
+      document.getElementById('formError').classList.remove('show');
+      document.getElementById('resultCard').classList.remove('show');
+      document.getElementById('productThumb').style.display = 'none';
+      document.getElementById('productThumbPlaceholder').style.display = 'flex';
+      productData = { name: null, brand: null, imgUrl: null };
+    }
+  </script>
 </body>
 </html>
