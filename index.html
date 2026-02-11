@@ -391,29 +391,59 @@
       margin-top: 2px;
     }
 
-    .max-date-highlight {
-      background: var(--paper);
-      border-radius: 8px;
-      padding: 14px 16px;
+    .result-highlight-row {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 8px;
       margin-bottom: 14px;
-      border: 1px solid var(--border);
     }
 
-    .max-date-highlight .label {
-      font-size: 11px;
+    .result-highlight-box {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rh-label {
+      font-size: 10px;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: rgba(15,15,15,0.4);
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
 
-    .max-date-highlight .value {
-      font-size: 26px;
+    .rh-value-big {
+      font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--ink);
       font-family: 'DM Mono', monospace;
+      line-height: 1;
+    }
+
+    .rh-value {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      font-family: 'DM Mono', monospace;
+      line-height: 1;
+    }
+
+    .rh-unit {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(15,15,15,0.4);
+      margin-top: 4px;
     }
 
     .stats-row {
@@ -582,16 +612,29 @@
     .share-product-name { font-size: 16px; font-weight: 700; }
     .share-product-bc { font-size: 12px; font-family: 'DM Mono', monospace; color: rgba(15,15,15,0.4); margin-top: 2px; }
 
-    .share-max-date {
-      background: var(--paper);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
+    .share-highlight-row {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 8px;
       margin-bottom: 14px;
     }
 
-    .share-max-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(15,15,15,0.4); margin-bottom: 4px; }
-    .share-max-value { font-size: 28px; font-weight: 800; font-family: 'DM Mono', monospace; letter-spacing: -0.02em; }
+    .share-highlight-box {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .share-max-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(15,15,15,0.4); margin-bottom: 5px; }
+    .share-max-value { font-size: 22px; font-weight: 800; font-family: 'DM Mono', monospace; letter-spacing: -0.02em; line-height: 1; }
+    .share-shelf-value { font-size: 26px; font-weight: 800; font-family: 'DM Mono', monospace; letter-spacing: -0.02em; line-height: 1; }
+    .share-shelf-unit { font-size: 11px; font-weight: 600; color: rgba(15,15,15,0.4); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
 
     .share-stats {
       display: grid;
@@ -757,10 +800,17 @@
             </div>
           </div>
 
-          <!-- Max date -->
-          <div class="max-date-highlight">
-            <div class="label">Data Máxima de Recebimento</div>
-            <div class="value" id="resultMaxDate">—</div>
+          <!-- Highlight row: shelf life + max date -->
+          <div class="result-highlight-row">
+            <div class="result-highlight-box">
+              <div class="rh-label">Shelf Life</div>
+              <div class="rh-value-big" id="rShelf">—</div>
+              <div class="rh-unit">dias totais</div>
+            </div>
+            <div class="result-highlight-box">
+              <div class="rh-label">Data Máx. de Recebimento</div>
+              <div class="rh-value" id="resultMaxDate">—</div>
+            </div>
           </div>
 
           <!-- Stats -->
@@ -817,9 +867,16 @@
             <div class="share-product-bc" id="sc-bc">—</div>
           </div>
         </div>
-        <div class="share-max-date">
-          <div class="share-max-label">Data Máxima de Recebimento</div>
-          <div class="share-max-value" id="sc-maxdate">—</div>
+        <div class="share-highlight-row">
+          <div class="share-highlight-box">
+            <div class="share-max-label">Shelf Life</div>
+            <div class="share-shelf-value" id="sc-shelf">—</div>
+            <div class="share-shelf-unit">dias totais</div>
+          </div>
+          <div class="share-highlight-box">
+            <div class="share-max-label">Data Máx. de Recebimento</div>
+            <div class="share-max-value" id="sc-maxdate">—</div>
+          </div>
         </div>
         <div class="share-stats">
           <div class="share-stat">
@@ -997,8 +1054,9 @@
       document.getElementById('resultName').textContent = productData.name || barcode;
       document.getElementById('resultBarcode').textContent = barcode;
 
-      // Max date
+      // Max date + shelf life
       document.getElementById('resultMaxDate').textContent = fmt(maxDate);
+      document.getElementById('rShelf').textContent = shelfDays;
 
       // Stats
       document.getElementById('rMfg').textContent = fmtShort(mfg);
@@ -1025,7 +1083,7 @@
     }
 
     // ── POPULATE SHARE CARD ──
-    function populateShareCard({ isValid, maxDate, diff, mfg, exp, rcpt, barcode }) {
+    function populateShareCard({ isValid, maxDate, shelfDays, diff, mfg, exp, rcpt, barcode }) {
       document.getElementById('sc-pill').textContent = isValid ? 'APROVADO' : 'REPROVADO';
       document.getElementById('sc-pill').className = 'share-status-pill ' + (isValid ? 'approved' : 'rejected');
 
@@ -1046,6 +1104,7 @@
       document.getElementById('sc-mfg').textContent = fmtShort(mfg);
       document.getElementById('sc-exp').textContent = fmtShort(exp);
       document.getElementById('sc-rcpt').textContent = fmtShort(rcpt);
+      document.getElementById('sc-shelf').textContent = shelfDays + 'd';
 
       const verdict = document.getElementById('sc-verdict');
       if (isValid) {
