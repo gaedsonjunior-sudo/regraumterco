@@ -927,53 +927,95 @@
       errBox.classList.remove('show');
       productData = { name: null, brand: null, imgUrl: null };
 
-      try {
-        // Tenta API v2 primeiro (mais estável e com melhor suporte CORS)
-        let data = null;
-        const urls = [
-          `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,image_small_url,image_url`,
-          `https://world.openfoodfacts.net/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,image_small_url,image_url`,
-        ];
-
-        for (const url of urls) {
-          try {
-            const res = await fetch(url, {
-              signal: AbortSignal.timeout(8000),
-              headers: { 'Accept': 'application/json' }
-            });
-            if (res.ok) {
-              data = await res.json();
-              if (data && (data.status === 1 || data.product)) break;
-            }
-          } catch (_) { /* tenta próxima URL */ }
-        }
-
-        if (data && data.status === 1 && data.product) {
-          const p = data.product;
-          productData.name = p.product_name_pt || p.product_name || p.abbreviated_product_name || 'Nome não disponível';
-          productData.brand = p.brands || '';
-          productData.imgUrl = p.image_small_url || p.image_url || null;
-
-          document.getElementById('productName').textContent = productData.name;
-          document.getElementById('productBrand').textContent = productData.brand || 'Marca não informada';
-
-          const thumb = document.getElementById('productThumb');
-          const ph = document.getElementById('productThumbPlaceholder');
-          if (productData.imgUrl) {
-            thumb.src = productData.imgUrl;
-            thumb.onload = () => { thumb.style.display = 'block'; ph.style.display = 'none'; };
-            thumb.onerror = () => { thumb.style.display = 'none'; ph.style.display = 'flex'; };
-          } else {
-            thumb.style.display = 'none';
-            ph.style.display = 'flex';
+      // ── Estratégias de busca em cascata ──
+      const strategies = [
+        // 1. UPCitemdb — gratuita, sem chave, excelente cobertura global
+        async () => {
+          const res = await fetch(
+            `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`,
+            { signal: AbortSignal.timeout(7000), headers: { 'Accept': 'application/json' } }
+          );
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (data.code === 'OK' && data.items && data.items.length > 0) {
+            const item = data.items[0];
+            return {
+              name: item.title || null,
+              brand: item.brand || '',
+              imgUrl: (item.images && item.images[0]) || null
+            };
           }
-
-          infoBox.classList.add('show');
-        } else {
-          errBox.classList.add('show');
+          return null;
+        },
+        // 2. Open Food Facts v2 — ótimo para alimentos
+        async () => {
+          const res = await fetch(
+            `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,image_small_url,image_url`,
+            { signal: AbortSignal.timeout(7000), headers: { 'Accept': 'application/json' } }
+          );
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (data.status === 1 && data.product) {
+            const p = data.product;
+            return {
+              name: p.product_name_pt || p.product_name || null,
+              brand: p.brands || '',
+              imgUrl: p.image_small_url || p.image_url || null
+            };
+          }
+          return null;
+        },
+        // 3. Open Food Facts Brasil — fallback focado em produtos nacionais
+        async () => {
+          const res = await fetch(
+            `https://br.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,brands,image_small_url`,
+            { signal: AbortSignal.timeout(7000), headers: { 'Accept': 'application/json' } }
+          );
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (data.status === 1 && data.product) {
+            const p = data.product;
+            return {
+              name: p.product_name || null,
+              brand: p.brands || '',
+              imgUrl: p.image_small_url || null
+            };
+          }
+          return null;
         }
-      } catch (e) {
-        console.error('Lookup error:', e);
+      ];
+
+      let found = false;
+      for (const strategy of strategies) {
+        try {
+          const result = await strategy();
+          if (result && result.name) {
+            productData.name = result.name;
+            productData.brand = result.brand;
+            productData.imgUrl = result.imgUrl;
+
+            document.getElementById('productName').textContent = productData.name;
+            document.getElementById('productBrand').textContent = productData.brand || 'Marca não informada';
+
+            const thumb = document.getElementById('productThumb');
+            const ph = document.getElementById('productThumbPlaceholder');
+            if (productData.imgUrl) {
+              thumb.src = productData.imgUrl;
+              thumb.onload = () => { thumb.style.display = 'block'; ph.style.display = 'none'; };
+              thumb.onerror = () => { thumb.style.display = 'none'; ph.style.display = 'flex'; };
+            } else {
+              thumb.style.display = 'none';
+              ph.style.display = 'flex';
+            }
+
+            infoBox.classList.add('show');
+            found = true;
+            break;
+          }
+        } catch (_) { /* tenta próxima estratégia */ }
+      }
+
+      if (!found) {
         errBox.classList.add('show');
       }
 
