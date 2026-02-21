@@ -746,7 +746,7 @@
           <div class="product-brand" id="productBrand">—</div>
         </div>
       </div>
-      <div class="lookup-error" id="lookupError">Produto não encontrado na base pública. Prossiga preenchendo as datas.</div>
+      <div class="lookup-error" id="lookupError">Produto não encontrado. Preencha o nome manualmente ou tente novamente. Prossiga preenchendo as datas.</div>
 
       <hr class="form-divider">
 
@@ -928,15 +928,29 @@
       productData = { name: null, brand: null, imgUrl: null };
 
       try {
-        const res = await fetch(
-          `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
-          { signal: AbortSignal.timeout(8000) }
-        );
-        const data = await res.json();
+        // Tenta API v2 primeiro (mais estável e com melhor suporte CORS)
+        let data = null;
+        const urls = [
+          `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,image_small_url,image_url`,
+          `https://world.openfoodfacts.net/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,image_small_url,image_url`,
+        ];
 
-        if (data.status === 1 && data.product) {
+        for (const url of urls) {
+          try {
+            const res = await fetch(url, {
+              signal: AbortSignal.timeout(8000),
+              headers: { 'Accept': 'application/json' }
+            });
+            if (res.ok) {
+              data = await res.json();
+              if (data && (data.status === 1 || data.product)) break;
+            }
+          } catch (_) { /* tenta próxima URL */ }
+        }
+
+        if (data && data.status === 1 && data.product) {
           const p = data.product;
-          productData.name = p.product_name || p.product_name_pt || p.abbreviated_product_name || 'Nome não disponível';
+          productData.name = p.product_name_pt || p.product_name || p.abbreviated_product_name || 'Nome não disponível';
           productData.brand = p.brands || '';
           productData.imgUrl = p.image_small_url || p.image_url || null;
 
@@ -959,6 +973,7 @@
           errBox.classList.add('show');
         }
       } catch (e) {
+        console.error('Lookup error:', e);
         errBox.classList.add('show');
       }
 
