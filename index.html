@@ -677,6 +677,110 @@
     .share-footer-label { font-size: 11px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.4); }
     .share-footer-ts { font-size: 11px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.6); }
 
+    /* ── TIPO TROCA BADGE ── */
+    .troca-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .troca-badge.troca {
+      background: rgba(37,99,196,0.12);
+      color: var(--accent2);
+      border: 1px solid rgba(37,99,196,0.25);
+    }
+    .troca-badge.perda {
+      background: rgba(192,33,15,0.1);
+      color: var(--red);
+      border: 1px solid rgba(192,33,15,0.2);
+    }
+
+    /* ── SCANNER BUTTON ── */
+    .btn-scanner {
+      background: var(--paper);
+      color: var(--ink);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 13px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .btn-scanner:hover { background: rgba(15,15,15,0.06); }
+    .btn-scanner:active { transform: scale(0.96); }
+
+    /* ── DATES ROW with scanner ── */
+    .exp-date-row {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+    }
+    .exp-date-row .form-group { flex: 1; margin-bottom: 0; }
+
+    /* ── SCANNER OVERLAY ── */
+    #scannerOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 1000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    #scannerOverlay.show { display: flex; }
+    #scannerOverlay video {
+      width: min(100vw, 480px);
+      max-height: 60vh;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .scanner-label {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.8;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .scanner-aim {
+      position: absolute;
+      width: min(80vw, 340px);
+      height: 140px;
+      border: 2px solid rgba(37,99,196,0.9);
+      border-radius: 8px;
+      box-shadow: 0 0 0 4000px rgba(0,0,0,0.4);
+      pointer-events: none;
+    }
+    .btn-cancel-scan {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1.5px solid rgba(255,255,255,0.25);
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .scanner-status {
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      min-height: 18px;
+    }
+
     /* ── LOADING SPINNER ── */
     .spinner {
       display: inline-block;
@@ -744,6 +848,7 @@
         <div>
           <div class="product-name" id="productName">—</div>
           <div class="product-brand" id="productBrand">—</div>
+          <span class="troca-badge" id="trocaBadge" style="display:none"></span>
         </div>
       </div>
       <div class="lookup-error" id="lookupError">Produto não encontrado. Preencha o nome manualmente ou tente novamente. Prossiga preenchendo as datas.</div>
@@ -758,8 +863,15 @@
           <input type="date" id="mfgDate" required>
         </div>
         <div class="form-group">
-          <label for="expDate">Validade</label>
-          <input type="date" id="expDate" required>
+          <label>Validade</label>
+          <div class="exp-date-row">
+            <div class="form-group">
+              <input type="date" id="expDate" required>
+            </div>
+            <button class="btn-scanner" onclick="openScanner()" title="Escanear código de barras">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="4" height="16" rx="1"/><rect x="8" y="4" width="2" height="16" rx="1"/><rect x="12" y="4" width="4" height="16" rx="1"/><rect x="18" y="4" width="4" height="16" rx="1"/></svg>
+            </button>
+          </div>
         </div>
         <div class="form-group">
           <label for="rcptDate">Recebimento</label>
@@ -848,6 +960,17 @@
 
   </div>
 
+  <!-- SCANNER OVERLAY -->
+  <div id="scannerOverlay">
+    <p class="scanner-label">Aponte a câmera para o código de barras do produto</p>
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <video id="scannerVideo" autoplay muted playsinline></video>
+      <div class="scanner-aim"></div>
+    </div>
+    <p class="scanner-status" id="scannerStatus">Inicializando câmera…</p>
+    <button class="btn-cancel-scan" onclick="closeScanner()">✕ Cancelar</button>
+  </div>
+
   <!-- OFFSCREEN SHARE CARD (used by html2canvas) -->
   <div id="share-canvas-source">
     <div class="share-card" id="shareCard">
@@ -901,15 +1024,49 @@
     </div>
   </div>
 
+  <!-- ZXing barcode scanner library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.20.0/zxing.min.js"></script>
+
   <script>
     // ── STATE ──
-    let productData = { name: null, brand: null, imgUrl: null };
+    let productData = { name: null, tipoTroca: null };
+    let productsDB = null;  // loaded from produtos.json
+    let scannerStream = null;
+    let scannerReader = null;
 
     // ── SET TODAY AS DEFAULT RECEIPT DATE ──
     (function () {
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('rcptDate').value = today;
     })();
+
+    // ── LOAD LOCAL PRODUCT DB ──
+    async function getProductsDB() {
+      if (productsDB) return productsDB;
+      try {
+        const res = await fetch('produtos.json');
+        if (!res.ok) throw new Error('não encontrado');
+        productsDB = await res.json();
+        return productsDB;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // ── TIPO TROCA ──
+    function resolveTipoTroca(tipoTroca) {
+      if (!tipoTroca || tipoTroca === '-') return 'PERDA';
+      const trocaTypes = ['10', '10;13', '10;14'];
+      return trocaTypes.includes(tipoTroca.trim()) ? 'TROCA' : 'PERDA';
+    }
+
+    function renderTrocaBadge(tipoTroca) {
+      const badge = document.getElementById('trocaBadge');
+      const tipo = resolveTipoTroca(tipoTroca);
+      badge.textContent = tipo;
+      badge.className = 'troca-badge ' + (tipo === 'TROCA' ? 'troca' : 'perda');
+      badge.style.display = 'inline-block';
+    }
 
     // ── LOOKUP ──
     async function lookupProduct() {
@@ -925,97 +1082,25 @@
       content.innerHTML = '<span class="spinner"></span>';
       infoBox.classList.remove('show');
       errBox.classList.remove('show');
-      productData = { name: null, brand: null, imgUrl: null };
+      productData = { name: null, tipoTroca: null };
 
-      // ── Estratégias de busca em cascata ──
-      const strategies = [
-        // 1. UPCitemdb — gratuita, sem chave, excelente cobertura global
-        async () => {
-          const res = await fetch(
-            `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`,
-            { signal: AbortSignal.timeout(7000), headers: { 'Accept': 'application/json' } }
-          );
-          if (!res.ok) return null;
-          const data = await res.json();
-          if (data.code === 'OK' && data.items && data.items.length > 0) {
-            const item = data.items[0];
-            return {
-              name: item.title || null,
-              brand: item.brand || '',
-              imgUrl: (item.images && item.images[0]) || null
-            };
-          }
-          return null;
-        },
-        // 2. Open Food Facts v2 — ótimo para alimentos
-        async () => {
-          const res = await fetch(
-            `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,image_small_url,image_url`,
-            { signal: AbortSignal.timeout(7000), headers: { 'Accept': 'application/json' } }
-          );
-          if (!res.ok) return null;
-          const data = await res.json();
-          if (data.status === 1 && data.product) {
-            const p = data.product;
-            return {
-              name: p.product_name_pt || p.product_name || null,
-              brand: p.brands || '',
-              imgUrl: p.image_small_url || p.image_url || null
-            };
-          }
-          return null;
-        },
-        // 3. Open Food Facts Brasil — fallback focado em produtos nacionais
-        async () => {
-          const res = await fetch(
-            `https://br.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,brands,image_small_url`,
-            { signal: AbortSignal.timeout(7000), headers: { 'Accept': 'application/json' } }
-          );
-          if (!res.ok) return null;
-          const data = await res.json();
-          if (data.status === 1 && data.product) {
-            const p = data.product;
-            return {
-              name: p.product_name || null,
-              brand: p.brands || '',
-              imgUrl: p.image_small_url || null
-            };
-          }
-          return null;
-        }
-      ];
+      const db = await getProductsDB();
 
-      let found = false;
-      for (const strategy of strategies) {
-        try {
-          const result = await strategy();
-          if (result && result.name) {
-            productData.name = result.name;
-            productData.brand = result.brand;
-            productData.imgUrl = result.imgUrl;
+      if (db && db[barcode]) {
+        const p = db[barcode];
+        productData.name = p.n;
+        productData.tipoTroca = p.t;
 
-            document.getElementById('productName').textContent = productData.name;
-            document.getElementById('productBrand').textContent = productData.brand || 'Marca não informada';
+        document.getElementById('productName').textContent = p.n;
+        document.getElementById('productBrand').textContent = resolveTipoTroca(p.t) === 'TROCA' ? 'Tipo: TROCA' : 'Tipo: PERDA';
+        renderTrocaBadge(p.t);
 
-            const thumb = document.getElementById('productThumb');
-            const ph = document.getElementById('productThumbPlaceholder');
-            if (productData.imgUrl) {
-              thumb.src = productData.imgUrl;
-              thumb.onload = () => { thumb.style.display = 'block'; ph.style.display = 'none'; };
-              thumb.onerror = () => { thumb.style.display = 'none'; ph.style.display = 'flex'; };
-            } else {
-              thumb.style.display = 'none';
-              ph.style.display = 'flex';
-            }
+        // hide thumb, show placeholder
+        document.getElementById('productThumb').style.display = 'none';
+        document.getElementById('productThumbPlaceholder').style.display = 'flex';
 
-            infoBox.classList.add('show');
-            found = true;
-            break;
-          }
-        } catch (_) { /* tenta próxima estratégia */ }
-      }
-
-      if (!found) {
+        infoBox.classList.add('show');
+      } else {
         errBox.classList.add('show');
       }
 
@@ -1100,14 +1185,8 @@
       // Product row
       const rThumb = document.getElementById('resultThumb');
       const rPh = document.getElementById('resultThumbPlaceholder');
-      if (productData.imgUrl) {
-        rThumb.src = productData.imgUrl;
-        rThumb.style.display = 'block';
-        rPh.style.display = 'none';
-      } else {
-        rThumb.style.display = 'none';
-        rPh.style.display = 'flex';
-      }
+      rThumb.style.display = 'none';
+      rPh.style.display = 'flex';
       document.getElementById('resultName').textContent = productData.name || barcode;
       document.getElementById('resultBarcode').textContent = barcode;
 
@@ -1146,14 +1225,8 @@
 
       const scImg = document.getElementById('sc-img');
       const scPh = document.getElementById('sc-imgph');
-      if (productData.imgUrl) {
-        scImg.src = productData.imgUrl;
-        scImg.style.display = 'block';
-        scPh.style.display = 'none';
-      } else {
-        scImg.style.display = 'none';
-        scPh.style.display = 'flex';
-      }
+      scImg.style.display = 'none';
+      scPh.style.display = 'flex';
 
       document.getElementById('sc-name').textContent = productData.name || 'Produto ' + barcode;
       document.getElementById('sc-bc').textContent = 'Cód: ' + barcode;
@@ -1273,7 +1346,84 @@
       document.getElementById('resultCard').classList.remove('show');
       document.getElementById('productThumb').style.display = 'none';
       document.getElementById('productThumbPlaceholder').style.display = 'flex';
-      productData = { name: null, brand: null, imgUrl: null };
+      document.getElementById('trocaBadge').style.display = 'none';
+      productData = { name: null, tipoTroca: null };
+    }
+    // ── BARCODE SCANNER ──
+    async function openScanner() {
+      const overlay = document.getElementById('scannerOverlay');
+      const video = document.getElementById('scannerVideo');
+      const status = document.getElementById('scannerStatus');
+
+      overlay.classList.add('show');
+      status.textContent = 'Inicializando câmera…';
+
+      try {
+        scannerStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        video.srcObject = scannerStream;
+
+        // Try ZXing first
+        if (typeof ZXing !== 'undefined') {
+          status.textContent = 'Aponte para o código de barras…';
+          const hints = new Map();
+          const formats = [
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.ITF,
+          ];
+          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+          scannerReader = new ZXing.BrowserMultiFormatReader(hints);
+          scannerReader.decodeFromStream(scannerStream, video, (result, err) => {
+            if (result) {
+              const code = result.getText();
+              handleScanResult(code);
+            }
+          });
+        } else {
+          // Fallback: BarcodeDetector API (Chrome on Android)
+          if ('BarcodeDetector' in window) {
+            status.textContent = 'Aponte para o código de barras…';
+            const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf'] });
+            const scanLoop = setInterval(async () => {
+              if (!scannerStream) { clearInterval(scanLoop); return; }
+              try {
+                const barcodes = await detector.detect(video);
+                if (barcodes && barcodes.length > 0) {
+                  clearInterval(scanLoop);
+                  handleScanResult(barcodes[0].rawValue);
+                }
+              } catch (_) {}
+            }, 300);
+            video._scanLoop = scanLoop;
+          } else {
+            status.textContent = '⚠️ Scanner não suportado neste navegador. Use Chrome no Android.';
+          }
+        }
+      } catch (e) {
+        status.textContent = '⚠️ Sem permissão para acessar a câmera.';
+      }
+    }
+
+    function handleScanResult(code) {
+      document.getElementById('barcode').value = code;
+      closeScanner();
+      lookupProduct();
+    }
+
+    function closeScanner() {
+      const overlay = document.getElementById('scannerOverlay');
+      overlay.classList.remove('show');
+      if (scannerReader) { try { scannerReader.reset(); } catch (_) {} scannerReader = null; }
+      if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+      const video = document.getElementById('scannerVideo');
+      if (video._scanLoop) { clearInterval(video._scanLoop); video._scanLoop = null; }
+      video.srcObject = null;
     }
   </script>
 </body>
