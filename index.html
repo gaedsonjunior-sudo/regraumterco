@@ -904,6 +904,7 @@
             <div>
               <div class="result-product-name" id="resultName">—</div>
               <div class="result-product-barcode" id="resultBarcode">—</div>
+              <span class="troca-badge" id="resultTrocaBadge" style="display:none"></span>
             </div>
           </div>
 
@@ -1180,6 +1181,17 @@
       document.getElementById('resultName').textContent = productData.name || barcode;
       document.getElementById('resultBarcode').textContent = barcode;
 
+      // Badge TROCA/PERDA no resultado
+      const resultBadge = document.getElementById('resultTrocaBadge');
+      if (productData.tipoTroca) {
+        const tipo = resolveTipoTroca(productData.tipoTroca);
+        resultBadge.textContent = tipo;
+        resultBadge.className = 'troca-badge ' + (tipo === 'TROCA' ? 'troca' : 'perda');
+        resultBadge.style.display = 'inline-block';
+      } else {
+        resultBadge.style.display = 'none';
+      }
+
       // Max date + shelf life
       document.getElementById('resultMaxDate').textContent = fmt(maxDate);
       document.getElementById('rShelf').textContent = shelfDays;
@@ -1337,6 +1349,7 @@
       document.getElementById('productThumb').style.display = 'none';
       document.getElementById('productThumbPlaceholder').style.display = 'flex';
       document.getElementById('trocaBadge').style.display = 'none';
+      document.getElementById('resultTrocaBadge').style.display = 'none';
       productData = { name: null, tipoTroca: null };
     }
     // ── BARCODE SCANNER (html5-qrcode — funciona iOS e Android) ──
