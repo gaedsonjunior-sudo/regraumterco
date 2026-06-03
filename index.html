@@ -838,6 +838,9 @@
           <label for="barcode">Código de Barras</label>
           <input type="text" id="barcode" placeholder="Ex: 7891000100103" inputmode="numeric">
         </div>
+        <button class="btn-scanner" onclick="openScanner()" title="Escanear código de barras">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="4" height="16" rx="1"/><rect x="8" y="4" width="2" height="16" rx="1"/><rect x="12" y="4" width="4" height="16" rx="1"/><rect x="18" y="4" width="4" height="16" rx="1"/></svg>
+        </button>
         <button class="btn-lookup" id="lookupBtn" onclick="lookupProduct()" title="Buscar produto">
           <span id="lookupBtnContent">🔍 Buscar</span>
         </button>
@@ -847,7 +850,6 @@
         <img id="productThumb" class="product-thumb" style="display:none" alt="Produto">
         <div>
           <div class="product-name" id="productName">—</div>
-          <div class="product-brand" id="productBrand">—</div>
           <span class="troca-badge" id="trocaBadge" style="display:none"></span>
         </div>
       </div>
@@ -863,15 +865,8 @@
           <input type="date" id="mfgDate" required>
         </div>
         <div class="form-group">
-          <label>Validade</label>
-          <div class="exp-date-row">
-            <div class="form-group">
-              <input type="date" id="expDate" required>
-            </div>
-            <button class="btn-scanner" onclick="openScanner()" title="Escanear código de barras">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="4" height="16" rx="1"/><rect x="8" y="4" width="2" height="16" rx="1"/><rect x="12" y="4" width="4" height="16" rx="1"/><rect x="18" y="4" width="4" height="16" rx="1"/></svg>
-            </button>
-          </div>
+          <label for="expDate">Validade</label>
+          <input type="date" id="expDate" required>
         </div>
         <div class="form-group">
           <label for="rcptDate">Recebimento</label>
@@ -963,10 +958,7 @@
   <!-- SCANNER OVERLAY -->
   <div id="scannerOverlay">
     <p class="scanner-label">Aponte a câmera para o código de barras do produto</p>
-    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-      <video id="scannerVideo" autoplay muted playsinline></video>
-      <div class="scanner-aim"></div>
-    </div>
+    <div id="html5qr-reader" style="width:min(100vw,480px);border-radius:12px;overflow:hidden;"></div>
     <p class="scanner-status" id="scannerStatus">Inicializando câmera…</p>
     <button class="btn-cancel-scan" onclick="closeScanner()">✕ Cancelar</button>
   </div>
@@ -1024,15 +1016,14 @@
     </div>
   </div>
 
-  <!-- ZXing barcode scanner library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.20.0/zxing.min.js"></script>
+  <!-- html5-qrcode: funciona no iOS Safari, Android Chrome e demais -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <script>
     // ── STATE ──
     let productData = { name: null, tipoTroca: null };
-    let productsDB = null;  // loaded from produtos.json
-    let scannerStream = null;
-    let scannerReader = null;
+    let productsDB = null;
+    let html5QrScanner = null;
 
     // ── SET TODAY AS DEFAULT RECEIPT DATE ──
     (function () {
@@ -1092,7 +1083,6 @@
         productData.tipoTroca = p.t;
 
         document.getElementById('productName').textContent = p.n;
-        document.getElementById('productBrand').textContent = resolveTipoTroca(p.t) === 'TROCA' ? 'Tipo: TROCA' : 'Tipo: PERDA';
         renderTrocaBadge(p.t);
 
         // hide thumb, show placeholder
@@ -1349,64 +1339,41 @@
       document.getElementById('trocaBadge').style.display = 'none';
       productData = { name: null, tipoTroca: null };
     }
-    // ── BARCODE SCANNER ──
+    // ── BARCODE SCANNER (html5-qrcode — funciona iOS e Android) ──
     async function openScanner() {
       const overlay = document.getElementById('scannerOverlay');
-      const video = document.getElementById('scannerVideo');
       const status = document.getElementById('scannerStatus');
-
       overlay.classList.add('show');
       status.textContent = 'Inicializando câmera…';
 
       try {
-        scannerStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-        video.srcObject = scannerStream;
-
-        // Try ZXing first
-        if (typeof ZXing !== 'undefined') {
-          status.textContent = 'Aponte para o código de barras…';
-          const hints = new Map();
-          const formats = [
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128,
-            ZXing.BarcodeFormat.CODE_39,
-            ZXing.BarcodeFormat.UPC_A,
-            ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.ITF,
-          ];
-          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-          scannerReader = new ZXing.BrowserMultiFormatReader(hints);
-          scannerReader.decodeFromStream(scannerStream, video, (result, err) => {
-            if (result) {
-              const code = result.getText();
-              handleScanResult(code);
-            }
-          });
-        } else {
-          // Fallback: BarcodeDetector API (Chrome on Android)
-          if ('BarcodeDetector' in window) {
-            status.textContent = 'Aponte para o código de barras…';
-            const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf'] });
-            const scanLoop = setInterval(async () => {
-              if (!scannerStream) { clearInterval(scanLoop); return; }
-              try {
-                const barcodes = await detector.detect(video);
-                if (barcodes && barcodes.length > 0) {
-                  clearInterval(scanLoop);
-                  handleScanResult(barcodes[0].rawValue);
-                }
-              } catch (_) {}
-            }, 300);
-            video._scanLoop = scanLoop;
-          } else {
-            status.textContent = '⚠️ Scanner não suportado neste navegador. Use Chrome no Android.';
-          }
-        }
+        html5QrScanner = new Html5Qrcode('html5qr-reader');
+        const config = {
+          fps: 10,
+          qrbox: { width: 260, height: 120 },
+          aspectRatio: 1.5,
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.ITF,
+          ]
+        };
+        await html5QrScanner.start(
+          { facingMode: 'environment' },
+          config,
+          (decodedText) => {
+            handleScanResult(decodedText);
+          },
+          () => { /* ignora erros de leitura contínua */ }
+        );
+        status.textContent = 'Aponte para o código de barras…';
       } catch (e) {
         status.textContent = '⚠️ Sem permissão para acessar a câmera.';
+        console.error(e);
       }
     }
 
@@ -1416,14 +1383,16 @@
       lookupProduct();
     }
 
-    function closeScanner() {
+    async function closeScanner() {
       const overlay = document.getElementById('scannerOverlay');
       overlay.classList.remove('show');
-      if (scannerReader) { try { scannerReader.reset(); } catch (_) {} scannerReader = null; }
-      if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
-      const video = document.getElementById('scannerVideo');
-      if (video._scanLoop) { clearInterval(video._scanLoop); video._scanLoop = null; }
-      video.srcObject = null;
+      if (html5QrScanner) {
+        try {
+          if (html5QrScanner.isScanning) await html5QrScanner.stop();
+          html5QrScanner.clear();
+        } catch (_) {}
+        html5QrScanner = null;
+      }
     }
   </script>
 </body>
